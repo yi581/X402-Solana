@@ -1,6 +1,6 @@
-# X402 Insurance Protocol - Solana Version
+# x402: BNTR Protocol - Solana Version
 
-> Zero-Fee Insurance for Web3 API Payments on Solana
+> Refund, Rewired — Autonomous Trust for the Micropayment Age
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Solana](https://img.shields.io/badge/solana-v1.17-purple)
