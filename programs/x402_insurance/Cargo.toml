@@ -3,6 +3,7 @@ name = "x402_insurance"
 version = "2.0.0"
 description = "X402 Insurance Protocol - Zero-Fee Insurance for Web3 API Payments on Solana"
 edition = "2021"
+license = "GPL-3.0"
 
 [lib]
 crate-type = ["cdylib", "lib"]
