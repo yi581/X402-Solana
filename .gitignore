@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output
+test-ledger/
+
+# Production
+target/
+dist/
+
+# Misc
+.DS_Store
+.env
+.env.local
+*.log
+*.swp
+*.swo
+*~
+
+# Anchor
+.anchor/
+.keys/
+
+# Rust
+Cargo.lock
+**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+Thumbs.db
