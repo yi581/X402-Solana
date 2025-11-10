@@ -214,7 +214,7 @@ pub mod x402_insurance {
 
         // Calculate amounts
         // Client gets refund of original payment (1 USDC) from provider's bond
-        let compensation = claim.payment_amount;
+        let refund_to_client = claim.payment_amount;
 
         // Platform gets penalty (0.02 USDC = 2% of payment) from provider's bond
         let penalty = claim.payment_amount
@@ -222,8 +222,8 @@ pub mod x402_insurance {
             .and_then(|v| v.checked_div(10000))
             .ok_or(InsuranceError::ArithmeticOverflow)?;
 
-        // Total deduction from provider bond = compensation + penalty = 1.02 USDC
-        let bond_deduction = compensation
+        // Total deduction from provider bond = refund + penalty = 1.02 USDC
+        let bond_deduction = refund_to_client
             .checked_add(penalty)
             .ok_or(InsuranceError::ArithmeticOverflow)?;
 
@@ -243,7 +243,7 @@ pub mod x402_insurance {
             .checked_sub(claim.locked_amount)
             .ok_or(InsuranceError::ArithmeticOverflow)?;
 
-        // Transfer compensation to client from vault (provider's bond)
+        // Transfer refund to client from vault (provider's bond)
         let seeds = &[
             b"vault".as_ref(),
             &[ctx.bumps.vault],
@@ -257,7 +257,7 @@ pub mod x402_insurance {
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-        token::transfer(cpi_ctx, compensation)?;
+        token::transfer(cpi_ctx, refund_to_client)?;
 
         // Transfer penalty from vault (provider's bond) to platform treasury
         let cpi_accounts = Transfer {
@@ -288,8 +288,8 @@ pub mod x402_insurance {
         claim.status = ClaimStatus::Claimed;
 
         msg!(
-            "Insurance claimed: client refunded {} (from bond), platform received {} penalty (from bond), total bond deducted {}",
-            compensation,
+            "Insurance claimed: client refunded {} (original payment from bond), platform received {} penalty (from bond), total bond deducted {}",
+            refund_to_client,
             penalty,
             bond_deduction
         );

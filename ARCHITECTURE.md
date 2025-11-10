@@ -158,13 +158,15 @@ Initial State:
   Provider Bond: 5 USDC (unlocked)
   Client Balance: 10 USDC
 
-Purchase Insurance (1 USDC):
-  Provider Bond: 5 USDC (4 unlocked, 1.02 locked)
-  Client Balance: 10 USDC (no payment yet in this model)
+Purchase Insurance (1 USDC payment):
+  Client → Provider: 1 USDC (direct payment)
+  Provider Bond: 5 USDC (3.98 unlocked, 1.02 locked)
+  Client Balance: 9 USDC
 
 Service Confirmed:
-  Provider Bond: 5 USDC (unlocked)
-  Client: Receives service
+  Provider Bond: 5 USDC (5 unlocked - bond released)
+  Provider received: 1 USDC (payment)
+  Client: Receives service (paid 1 USDC)
   Status: ✅ Everyone happy
 ```
 
@@ -175,14 +177,20 @@ Initial State:
   Provider Bond: 5 USDC (unlocked)
   Client Balance: 10 USDC
 
-Purchase Insurance (1 USDC):
-  Provider Bond: 5 USDC (4 unlocked, 1.02 locked)
+Purchase Insurance (1 USDC payment):
+  Client → Provider: 1 USDC (direct payment)
+  Provider Bond: 5 USDC (3.98 unlocked, 1.02 locked)
+  Client Balance: 9 USDC
 
 Timeout Reached + Client Claims:
-  Provider Bond: 3.98 USDC (lost 1.02)
-  Client: Receives 2 USDC (2x refund)
-  Platform: Receives 0.02 USDC (2% penalty)
-  Status: ⚠️ Provider penalized, client compensated
+  Provider Bond: 3.98 USDC (lost 1.02 from bond)
+  Client: Receives 1 USDC refund (from provider's bond)
+  Platform: Receives 0.02 USDC penalty (from provider's bond)
+  Net Result:
+    - Client: Paid 1, got back 1 = 0 net
+    - Provider: Received 1, lost 1.02 bond = -0.02 USDC
+    - Platform: +0.02 USDC
+  Status: ⚠️ Provider penalized, client refunded, platform receives penalty
 ```
 
 ## 🔐 Security Model

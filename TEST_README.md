@@ -300,7 +300,7 @@ it("Provider withdraws bond", async () => {
    ✅ Zero insurance fee for clients
    ✅ Provider bond automatically locked at 1.02x
    ✅ Service confirmation unlocks bond
-   ✅ Timeout allows 2x compensation claim
+   ✅ Timeout allows client refund (1x) from provider's bond
    ✅ Platform receives 2% penalty on failures
 
 🎉 All tests completed!

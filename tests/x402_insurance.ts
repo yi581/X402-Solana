@@ -377,7 +377,7 @@ describe("x402_insurance", () => {
     console.log("   ✅ Zero insurance fee for clients");
     console.log("   ✅ Provider bond automatically locked at 1.02x");
     console.log("   ✅ Service confirmation unlocks bond");
-    console.log("   ✅ Timeout allows 2x compensation claim");
+    console.log("   ✅ Timeout allows client refund (1x) from provider's bond");
     console.log("   ✅ Platform receives 2% penalty on failures");
     console.log("\n🎉 All tests completed!");
   });

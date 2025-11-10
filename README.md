@@ -11,7 +11,7 @@
 - **Zero Insurance Fees** - Clients pay 0 SOL/USDC for insurance, only gas
 - **Provider Bond-Backed** - Providers deposit collateral to guarantee service
 - **Ed25519 Signatures** - Native Solana signature verification
-- **Automatic Compensation** - 2x payment compensation on provider failure
+- **Automatic Refund** - Full refund on provider failure from provider's bond
 - **Platform Penalty** - 2% penalty on provider failures goes to platform
 - **Fast Settlement** - 400ms block time on Solana
 
@@ -141,29 +141,34 @@ anchor test
 ### Success Scenario
 
 ```
-User pays 1 USDC for service
+Client pays 1 USDC for service
 └── Client purchases insurance (0 USDC fee, only gas)
+    ├── Client transfers 1 USDC → Provider (payment)
     ├── Provider bond locked: 1.02 USDC (payment × 1.02)
     └── Provider confirms service
         └── Provider bond unlocked: 1.02 USDC
             └── Result:
-                ├── Client: -1 USDC (service payment) + service received ✅
-                ├── Provider: +1 USDC ✅
+                ├── Client: -1 USDC (paid) + service received ✅
+                ├── Provider: +1 USDC (received payment) ✅
                 └── Platform: 0 USDC
 ```
 
 ### Failure Scenario (Timeout)
 
 ```
-User pays 1 USDC for service
+Client pays 1 USDC for service
 └── Client purchases insurance (0 USDC fee, only gas)
+    ├── Client transfers 1 USDC → Provider (payment)
     ├── Provider bond locked: 1.02 USDC
     └── Provider FAILS to deliver (timeout)
         └── Client claims insurance
-            └── Result:
-                ├── Client: +2 USDC compensation ✅
-                ├── Provider bond: -2.04 USDC ❌
-                └── Platform: +0.04 USDC (2% penalty) ✅
+            └── Provider bond deducted: 1.02 USDC
+                ├── 1 USDC → Client (refund of original payment)
+                └── 0.02 USDC → Platform (2% penalty)
+                    └── Result:
+                        ├── Client: Paid 1 USDC, got back 1 USDC = 0 net ✅
+                        ├── Provider: Got 1 USDC, bond -1.02 USDC = -0.02 USDC ❌
+                        └── Platform: +0.02 USDC (2% penalty) ✅
 ```
 
 ## 🔧 Usage Examples
@@ -259,7 +264,8 @@ await program.methods
   .signers([client])
   .rpc();
 
-// Client receives 2x compensation ✅
+// Client receives full refund (original payment) from provider's bond ✅
+// Platform receives 2% penalty from provider's bond ✅
 ```
 
 ## 🔐 Security
