@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(while read f)",
+      "Bash(do if grep -q \"测试\\|中文\\|初始化\\|存款\\|提款\\|超时\\|索赔\\|验证\\|配置\\|功能\" $f)",
+      "Bash(then echo $f)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(cat:*)",
+      "Bash(python3:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

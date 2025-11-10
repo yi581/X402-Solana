@@ -1,11 +1,11 @@
 /**
  * Provider Liquidation Test
  *
- * 测试场景：
- * 1. Provider存入保证金
- * 2. 通过多次索赔使Provider保证金低于最小值
- * 3. 24小时宽限期后清算Provider
- * 4. 剩余保证金转给平台
+ * Test Scenario:
+ * 1. Provider deposits bond
+ * 2. Multiple claims reduce Provider's bond below minimum
+ * 3. After 24-hour grace period, liquidate Provider
+ * 4. Remaining bond transferred to platform
  */
 
 import * as anchor from "@coral-xyz/anchor";
@@ -50,9 +50,9 @@ describe("Provider Liquidation Test", () => {
   let platformTokenAccount: any;
 
   before(async () => {
-    console.log("\n🔧 设置Provider清算测试环境...\n");
+    console.log("\n🔧 Setting up Provider liquidation test environment...\n");
 
-    // 读取keypairs
+    // Read keypairs
     const keysDir = path.join(__dirname, "../.keys");
     const providerPath = path.join(keysDir, "provider.json");
     const clientPath = path.join(keysDir, "client.json");
@@ -67,12 +67,12 @@ describe("Provider Liquidation Test", () => {
     providerKeypair = Keypair.fromSecretKey(providerSecretKey);
     clientKeypair = Keypair.fromSecretKey(clientSecretKey);
 
-    console.log("📋 测试账户:");
+    console.log("📋 Test Accounts:");
     console.log("  Platform:", provider.wallet.publicKey.toString());
     console.log("  Provider:", providerKeypair.publicKey.toString());
     console.log("");
 
-    // 派生PDAs
+    // Derive PDAs
     [configPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
       program.programId
@@ -88,7 +88,7 @@ describe("Provider Liquidation Test", () => {
       program.programId
     );
 
-    // 获取token账户
+    // Get token accounts
     providerTokenAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       providerKeypair,
@@ -112,117 +112,117 @@ describe("Provider Liquidation Test", () => {
       provider.wallet.publicKey
     );
 
-    console.log("✅ 设置完成\n");
+    console.log("✅ Setup complete\n");
   });
 
-  it("1️⃣ 检查Provider当前状态", async () => {
-    console.log("🔍 检查Provider当前保证金状态...");
+  it("1️⃣ Check current Provider status", async () => {
+    console.log("🔍 Checking Provider current bond status...");
 
     try {
       const bond = await program.account.providerBond.fetch(providerBondPDA);
 
       console.log("  Provider Bond:");
-      console.log("    总保证金:", bond.totalBond.toString(), "=", bond.totalBond.toNumber() / 1_000_000, "tokens");
-      console.log("    锁定保证金:", bond.lockedBond.toString(), "=", bond.lockedBond.toNumber() / 1_000_000, "tokens");
-      console.log("    最小保证金:", bond.minBond.toString(), "=", bond.minBond.toNumber() / 1_000_000, "tokens");
-      console.log("    是否已清算:", bond.isLiquidated);
-      console.log("    资金不足时间:", bond.undercollateralizedSince.toString());
+      console.log("    Total bond:", bond.totalBond.toString(), "=", bond.totalBond.toNumber() / 1_000_000, "tokens");
+      console.log("    Locked bond:", bond.lockedBond.toString(), "=", bond.lockedBond.toNumber() / 1_000_000, "tokens");
+      console.log("    Minimum bond:", bond.minBond.toString(), "=", bond.minBond.toNumber() / 1_000_000, "tokens");
+      console.log("    Is liquidated:", bond.isLiquidated);
+      console.log("    Undercollateralized since:", bond.undercollateralizedSince.toString());
       console.log("");
 
       const available = bond.totalBond.toNumber() - bond.lockedBond.toNumber();
-      console.log("  可用保证金:", available / 1_000_000, "tokens");
+      console.log("  Available bond:", available / 1_000_000, "tokens");
 
       if (available < bond.minBond.toNumber()) {
-        console.log("  ⚠️  Provider保证金不足!");
+        console.log("  ⚠️  Provider bond insufficient!");
       } else {
-        console.log("  ✅ Provider保证金充足");
+        console.log("  ✅ Provider bond sufficient");
       }
 
     } catch (error: any) {
-      console.log("  ℹ️  Provider Bond账户不存在");
+      console.log("  ℹ️  Provider Bond account does not exist");
     }
     console.log("");
   });
 
-  it("2️⃣ 测试清算条件", async () => {
-    console.log("📊 测试清算条件检查...\n");
+  it("2️⃣ Test liquidation conditions", async () => {
+    console.log("📊 Testing liquidation condition check...\n");
 
-    console.log("清算需要的条件:");
-    console.log("  1. Provider保证金低于最小值");
-    console.log("  2. 24小时宽限期已过");
-    console.log("  3. Provider未在宽限期内补足保证金");
+    console.log("Conditions required for liquidation:");
+    console.log("  1. Provider bond below minimum");
+    console.log("  2. 24-hour grace period has passed");
+    console.log("  3. Provider has not replenished bond during grace period");
     console.log("");
 
     try {
       const bond = await program.account.providerBond.fetch(providerBondPDA);
 
       if (bond.isLiquidated) {
-        console.log("  ⚠️  Provider已被清算");
+        console.log("  ⚠️  Provider already liquidated");
         return;
       }
 
       const available = bond.totalBond.toNumber() - bond.lockedBond.toNumber();
 
       if (available < bond.minBond.toNumber()) {
-        console.log("  ✅ 条件1满足: 保证金不足");
+        console.log("  ✅ Condition 1 met: Insufficient bond");
 
         if (bond.undercollateralizedSince.toNumber() === 0) {
-          console.log("  ❌ 条件2不满足: 未设置资金不足时间");
-          console.log("     (这应该在第一次保证金不足时自动设置)");
+          console.log("  ❌ Condition 2 not met: Undercollateralized timestamp not set");
+          console.log("     (This should be set automatically when bond first becomes insufficient)");
         } else {
           const gracePeriod = 86400; // 24 hours
           const now = Math.floor(Date.now() / 1000);
           const undercollateralizedTime = bond.undercollateralizedSince.toNumber();
           const timePassed = now - undercollateralizedTime;
 
-          console.log("  资金不足时间:", new Date(undercollateralizedTime * 1000).toISOString());
-          console.log("  当前时间:", new Date(now * 1000).toISOString());
-          console.log("  已过时间:", timePassed, "秒 (", Math.floor(timePassed / 3600), "小时)");
-          console.log("  宽限期:", gracePeriod, "秒 (24小时)");
+          console.log("  Undercollateralized since:", new Date(undercollateralizedTime * 1000).toISOString());
+          console.log("  Current time:", new Date(now * 1000).toISOString());
+          console.log("  Time elapsed:", timePassed, "seconds (", Math.floor(timePassed / 3600), "hours)");
+          console.log("  Grace period:", gracePeriod, "seconds (24 hours)");
 
           if (timePassed >= gracePeriod) {
-            console.log("  ✅ 条件2满足: 宽限期已过");
+            console.log("  ✅ Condition 2 met: Grace period has passed");
             console.log("");
-            console.log("  ✅ 可以执行清算!");
+            console.log("  ✅ Can execute liquidation!");
           } else {
-            console.log("  ❌ 条件2不满足: 宽限期未过");
-            console.log("     需要再等待", (gracePeriod - timePassed), "秒");
+            console.log("  ❌ Condition 2 not met: Grace period not passed");
+            console.log("     Need to wait", (gracePeriod - timePassed), "more seconds");
           }
         }
       } else {
-        console.log("  ❌ 条件1不满足: 保证金充足");
-        console.log("     可用保证金:", available / 1_000_000, "tokens");
-        console.log("     最小保证金:", bond.minBond.toNumber() / 1_000_000, "tokens");
+        console.log("  ❌ Condition 1 not met: Sufficient bond");
+        console.log("     Available bond:", available / 1_000_000, "tokens");
+        console.log("     Minimum bond:", bond.minBond.toNumber() / 1_000_000, "tokens");
       }
 
     } catch (error: any) {
-      console.log("  ❌ 无法检查Provider状态:", error.message);
+      console.log("  ❌ Cannot check Provider status:", error.message);
     }
     console.log("");
   });
 
-  it("3️⃣ 测试总结", () => {
+  it("3️⃣ Test summary", () => {
     console.log("");
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("📊 Provider清算测试总结");
+    console.log("📊 Provider Liquidation Test Summary");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("");
-    console.log("ℹ️  清算测试说明:");
+    console.log("ℹ️  Liquidation Test Notes:");
     console.log("");
-    console.log("由于清算需要24小时宽限期,在devnet上完整测试需要:");
-    console.log("  1. 通过多次超时索赔使Provider保证金低于最小值");
-    console.log("  2. 等待24小时宽限期");
-    console.log("  3. 执行liquidate_provider指令");
+    console.log("Since liquidation requires 24-hour grace period, full testing on devnet requires:");
+    console.log("  1. Reduce Provider bond below minimum through multiple timeout claims");
+    console.log("  2. Wait for 24-hour grace period");
+    console.log("  3. Execute liquidate_provider instruction");
     console.log("");
-    console.log("在实际生产环境中,清算流程的作用:");
-    console.log("  - 保护整个系统的偿付能力");
-    console.log("  - 给Provider时间补充保证金");
-    console.log("  - 防止系统性风险");
+    console.log("In production environment, liquidation process serves to:");
+    console.log("  - Protect the system's overall solvency");
+    console.log("  - Give Provider time to replenish bond");
+    console.log("  - Prevent systemic risk");
     console.log("");
-    console.log("💡 建议:");
-    console.log("  - 在localnet上可以修改宽限期为较短时间进行测试");
-    console.log("  - 在devnet上可以检查当前Provider的清算条件");
-    console.log("  - 清算机制的智能合约代码已经实现并部署");
+    console.log("💡 Recommendations:");
+    console.log("  - On localnet, can modify grace period to shorter time for testing");
+    console.log("  - On devnet, can check current Provider liquidation conditions");
+    console.log("  - Liquidation mechanism smart contract code is implemented and deployed");
     console.log("");
     console.log("═══════════════════════════════════════════════════════════");
   });

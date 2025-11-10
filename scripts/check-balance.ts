@@ -17,7 +17,7 @@ async function checkBalance() {
   const providerWallet = new PublicKey("7RRuzQ6ix3L6LghJr1RdWCUKT4mJhUGwhaLecZwKeAim");
   const providerTokenAccount = new PublicKey("DUDx2oqYZnHEYJfnw3j81kc8Hs4A42q6km6YaitVpaii");
 
-  console.log("🔍 检查Provider USDC余额...\n");
+  console.log("🔍 Checking Provider USDC balance...\n");
   console.log("Provider Wallet:", providerWallet.toString());
   console.log("Token Account:", providerTokenAccount.toString());
   console.log("");
@@ -35,16 +35,16 @@ async function checkBalance() {
     console.log("");
 
     if (usdcBalance >= 10) {
-      console.log("✅ 确认收到 10 USDC！");
+      console.log("✅ Confirmed received 10 USDC!");
       console.log("");
-      console.log("📋 下一步：Provider存入保证金到vault");
+      console.log("📋 Next step: Provider deposits bond to vault");
     } else {
-      console.log("⚠️  USDC余额不足10");
+      console.log("⚠️  USDC balance less than 10");
     }
 
     return usdcBalance;
   } catch (error: any) {
-    console.error("❌ 错误:", error.message);
+    console.error("❌ Error:", error.message);
     throw error;
   }
 }

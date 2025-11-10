@@ -1,107 +1,107 @@
-# 🚀 X402 Solana 快速开始指南
+# 🚀 X402 Solana Quick Start Guide
 
-## 当前状态
+## Current Status
 
-✅ **项目代码已完成** - 所有 Solana 智能合约、测试和文档都已准备就绪
-⏳ **等待工具安装** - 需要安装 Solana、Rust 和 Anchor 工具链
+✅ **Project Code Complete** - All Solana smart contracts, tests and documentation are ready
+⏳ **Awaiting Tool Installation** - Need to install Solana, Rust and Anchor toolchain
 
-## 📋 你现在需要做什么
+## 📋 What You Need to Do Now
 
-### 选项 1: 自动安装（推荐）⚡
+### Option 1: Automatic Installation (Recommended) ⚡
 
-**只需一条命令完成所有安装：**
+**Complete all installations with just one command:**
 
 ```bash
 cd /Users/panda/Documents/ibnk/code/X402/solana-x402
 ./INSTALLATION_SCRIPT.sh
 ```
 
-这个脚本会自动：
-1. ✅ 安装 Rust
-2. ✅ 安装 Solana CLI
-3. ✅ 创建 devnet 钱包
-4. ✅ 获取 devnet SOL
-5. ✅ 安装 Anchor
-6. ✅ 安装 Node.js 依赖
-7. ✅ 构建 Solana 程序
-8. ✅ 运行测试
+This script will automatically:
+1. ✅ Install Rust
+2. ✅ Install Solana CLI
+3. ✅ Create devnet wallet
+4. ✅ Get devnet SOL
+5. ✅ Install Anchor
+6. ✅ Install Node.js dependencies
+7. ✅ Build Solana program
+8. ✅ Run tests
 
-**预计时间**: 20-40 分钟（取决于网络速度）
+**Estimated time**: 20-40 minutes (depending on network speed)
 
 ---
 
-### 选项 2: 手动安装（分步骤）🔧
+### Option 2: Manual Installation (Step by Step) 🔧
 
-如果自动脚本失败，按以下步骤手动安装：
+If automatic script fails, follow these steps for manual installation:
 
-#### Step 1: 安装 Rust (5 分钟)
+#### Step 1: Install Rust (5 minutes)
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source "$HOME/.cargo/env"
-rustc --version  # 验证
+rustc --version  # Verify
 ```
 
-#### Step 2: 安装 Solana CLI (5 分钟)
+#### Step 2: Install Solana CLI (5 minutes)
 
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
 export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-solana --version  # 验证
+solana --version  # Verify
 ```
 
-添加到 PATH（永久）：
+Add to PATH (permanently):
 ```bash
-# 如果使用 zsh
+# If using zsh
 echo 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' >> ~/.zshrc
 
-# 如果使用 bash
+# If using bash
 echo 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' >> ~/.bashrc
 ```
 
-#### Step 3: 配置 Solana (2 分钟)
+#### Step 3: Configure Solana (2 minutes)
 
 ```bash
-# 创建钱包
+# Create wallet
 solana-keygen new --outfile ~/.config/solana/id.json
 
-# 设置 devnet
+# Set devnet
 solana config set --url devnet
 
-# 获取测试 SOL
+# Get test SOL
 solana airdrop 2
 ```
 
-如果空投失败，访问: https://solfaucet.com
+If airdrop fails, visit: https://solfaucet.com
 
-#### Step 4: 安装 Anchor (10-15 分钟)
+#### Step 4: Install Anchor (10-15 minutes)
 
 ```bash
 cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
 avm install latest
 avm use latest
-anchor --version  # 验证
+anchor --version  # Verify
 ```
 
-#### Step 5: 构建项目 (5-10 分钟，首次构建)
+#### Step 5: Build Project (5-10 minutes, first build)
 
 ```bash
 cd /Users/panda/Documents/ibnk/code/X402/solana-x402
 
-# 安装 Node 依赖
+# Install Node dependencies
 npm install --legacy-peer-deps
 
-# 构建 Solana 程序
+# Build Solana program
 anchor build
 ```
 
-#### Step 6: 运行测试 (2-3 分钟)
+#### Step 6: Run Tests (2-3 minutes)
 
 ```bash
 anchor test
 ```
 
-期望输出：
+Expected output:
 ```
   x402_insurance
     ✓ Initialize insurance protocol
@@ -117,89 +117,89 @@ anchor test
 
 ---
 
-## 🎯 安装后的下一步
+## 🎯 Next Steps After Installation
 
-### 1. 部署到 Devnet
+### 1. Deploy to Devnet
 
 ```bash
 ./scripts/deploy.sh
 ```
 
-### 2. 初始化协议
+### 2. Initialize Protocol
 
 ```bash
 node scripts/initialize.js
 ```
 
-按提示输入：
-- Platform Treasury: (按 Enter 使用默认地址)
+Enter when prompted:
+- Platform Treasury: (Press Enter to use default address)
 - Penalty Rate: `200` (2%)
-- Timeout: `300` (5 分钟)
+- Timeout: `300` (5 minutes)
 
-### 3. 验证部署
+### 3. Verify Deployment
 
-检查程序是否成功部署：
+Check if program deployed successfully:
 ```bash
 solana program show <PROGRAM_ID> --url devnet
 ```
 
 ---
 
-## 📊 项目概览
+## 📊 Project Overview
 
-### 已完成的文件 ✅
+### Completed Files ✅
 
 ```
 solana-x402/
 ├── programs/x402_insurance/src/
-│   ├── lib.rs          ← 主程序 (715 行)
-│   ├── state.rs        ← 账户结构 (120 行)
-│   └── errors.rs       ← 错误处理 (35 行)
+│   ├── lib.rs          ← Main program (715 lines)
+│   ├── state.rs        ← Account structures (120 lines)
+│   └── errors.rs       ← Error handling (35 lines)
 │
 ├── tests/
-│   └── x402_insurance.ts  ← 完整测试 (400 行)
+│   └── x402_insurance.ts  ← Complete tests (400 lines)
 │
 ├── scripts/
-│   ├── deploy.sh          ← 部署脚本
-│   └── initialize.js      ← 初始化脚本
+│   ├── deploy.sh          ← Deployment script
+│   └── initialize.js      ← Initialization script
 │
-└── 文档/
-    ├── README.md           ← 项目文档
-    ├── SETUP_GUIDE.md      ← 详细安装指南
-    ├── PROJECT_SUMMARY.md  ← 项目总结
-    └── QUICKSTART.md       ← 本文件
+└── Documentation/
+    ├── README.md           ← Project documentation
+    ├── SETUP_GUIDE.md      ← Detailed setup guide
+    ├── PROJECT_SUMMARY.md  ← Project summary
+    └── QUICKSTART.md       ← This file
 ```
 
-### 核心功能
+### Core Features
 
-- ✅ Provider 存款 Bond
-- ✅ Client 零费用购买保险
-- ✅ Ed25519 签名验证服务
-- ✅ 超时自动索赔
-- ✅ 2x 补偿机制
-- ✅ 2% 平台罚金
+- ✅ Provider deposit bond
+- ✅ Client purchases insurance (zero fee)
+- ✅ Ed25519 signature verification service
+- ✅ Automatic timeout claim
+- ✅ 2x compensation mechanism
+- ✅ 2% platform penalty
 
-### 经济模型（与 EVM 版本一致）
+### Economic Model (Consistent with EVM version)
 
-**成功场景**:
-- Client: 付 1 USDC → 获得服务 ✅
-- Insurance: 0 USDC 费用 ✅
-- Provider: 收 1 USDC ✅
+**Success Scenario**:
+- Client: Pays 1 USDC → Gets service ✅
+- Insurance: 0 USDC fee ✅
+- Provider: Receives 1 USDC ✅
 
-**失败场景**:
-- Client: 获得 2 USDC 补偿 ✅
-- Provider: 损失 2.04 USDC ❌
-- Platform: 获得 0.04 USDC 罚金 ✅
+**Failure Scenario**:
+- Client: Gets 2 USDC compensation ✅
+- Provider: Loses 2.04 USDC ❌
+- Platform: Gets 0.04 USDC penalty ✅
 
 ---
 
-## 🐛 常见问题
+## 🐛 Common Issues
 
-### Q: 安装脚本卡住了？
+### Q: Installation script stuck?
 
-A: 按 Ctrl+C 停止，然后单独运行每一步：
+A: Press Ctrl+C to stop, then run each step individually:
 ```bash
-# 检查哪一步失败
+# Check which step failed
 rustc --version
 solana --version
 anchor --version
@@ -207,29 +207,29 @@ anchor --version
 
 ### Q: "command not found: solana"
 
-A: PATH 没有正确设置，手动添加：
+A: PATH not set correctly, add manually:
 ```bash
 export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
 ```
 
-### Q: 空投失败？
+### Q: Airdrop failed?
 
-A: Devnet 水龙头有时会限流，尝试：
-1. 多次运行 `solana airdrop 1`
-2. 访问 https://solfaucet.com
-3. 访问 https://faucet.solana.com
+A: Devnet faucet sometimes rate limits, try:
+1. Run `solana airdrop 1` multiple times
+2. Visit https://solfaucet.com
+3. Visit https://faucet.solana.com
 
-### Q: 构建失败？
+### Q: Build failed?
 
-A: 检查 Rust 版本：
+A: Check Rust version:
 ```bash
 rustup update stable
-rustc --version  # 应该 >= 1.70
+rustc --version  # Should be >= 1.70
 ```
 
-### Q: 测试失败？
+### Q: Tests failed?
 
-A: 清理并重新构建：
+A: Clean and rebuild:
 ```bash
 anchor clean
 anchor build
@@ -238,31 +238,31 @@ anchor test
 
 ---
 
-## 📞 需要帮助？
+## 📞 Need Help?
 
-1. **查看详细文档**: `cat SETUP_GUIDE.md`
-2. **查看项目总结**: `cat PROJECT_SUMMARY.md`
-3. **查看主文档**: `cat README.md`
+1. **View detailed documentation**: `cat SETUP_GUIDE.md`
+2. **View project summary**: `cat PROJECT_SUMMARY.md`
+3. **View main documentation**: `cat README.md`
 
 ---
 
-## ⏱️ 预计时间线
+## ⏱️ Estimated Timeline
 
-| 步骤 | 时间 |
+| Step | Time |
 |------|------|
-| 安装 Rust | 5 分钟 |
-| 安装 Solana | 5 分钟 |
-| 配置钱包 | 2 分钟 |
-| 安装 Anchor | 10-15 分钟 |
-| 构建程序 | 5-10 分钟 |
-| 运行测试 | 2-3 分钟 |
-| **总计** | **30-40 分钟** |
+| Install Rust | 5 minutes |
+| Install Solana | 5 minutes |
+| Configure wallet | 2 minutes |
+| Install Anchor | 10-15 minutes |
+| Build program | 5-10 minutes |
+| Run tests | 2-3 minutes |
+| **Total** | **30-40 minutes** |
 
 ---
 
-## 🎉 成功标志
+## 🎉 Success Indicators
 
-当你看到以下输出，说明一切正常：
+When you see this output, everything is working:
 
 ```bash
 $ anchor test
@@ -283,11 +283,11 @@ $ anchor test
 
 ---
 
-**现在就开始吧！运行:**
+**Start now! Run:**
 
 ```bash
 cd /Users/panda/Documents/ibnk/code/X402/solana-x402
 ./INSTALLATION_SCRIPT.sh
 ```
 
-祝你好运！🚀
+Good luck! 🚀

@@ -1,11 +1,11 @@
 #!/bin/bash
 # ============================================================================
-# X402 Insurance Protocol - Solana 自动安装脚本
+# X402 Insurance Protocol - Solana Automated Installation Script
 # ============================================================================
 #
-# 此脚本将自动安装所有必需的工具并构建测试项目
+# This script will automatically install all required tools and build the test project
 #
-# 使用方法:
+# Usage:
 #   chmod +x INSTALLATION_SCRIPT.sh
 #   ./INSTALLATION_SCRIPT.sh
 #
@@ -20,22 +20,22 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}X402 Solana 项目自动安装${NC}"
+echo -e "${BLUE}X402 Solana Project Auto Installation${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
 # ============================================================================
-# Step 1: 安装 Rust
+# Step 1: Install Rust
 # ============================================================================
-echo -e "${YELLOW}[1/6] 检查/安装 Rust${NC}"
+echo -e "${YELLOW}[1/6] Checking/Installing Rust${NC}"
 
 if command -v rustc &> /dev/null; then
-    echo -e "${GREEN}✅ Rust 已安装: $(rustc --version)${NC}"
+    echo -e "${GREEN}✅ Rust already installed: $(rustc --version)${NC}"
 else
-    echo "正在安装 Rust..."
+    echo "Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     source "$HOME/.cargo/env"
-    echo -e "${GREEN}✅ Rust 安装完成${NC}"
+    echo -e "${GREEN}✅ Rust installation complete${NC}"
 fi
 
 rustc --version
@@ -43,18 +43,18 @@ cargo --version
 echo ""
 
 # ============================================================================
-# Step 2: 安装 Solana CLI
+# Step 2: Install Solana CLI
 # ============================================================================
-echo -e "${YELLOW}[2/6] 检查/安装 Solana CLI${NC}"
+echo -e "${YELLOW}[2/6] Checking/Installing Solana CLI${NC}"
 
 if command -v solana &> /dev/null; then
-    echo -e "${GREEN}✅ Solana 已安装: $(solana --version)${NC}"
+    echo -e "${GREEN}✅ Solana already installed: $(solana --version)${NC}"
 else
-    echo "正在安装 Solana CLI..."
+    echo "Installing Solana CLI..."
     sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
     export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
 
-    # 添加到 shell 配置
+    # Add to shell configuration
     if [ -f "$HOME/.zshrc" ]; then
         echo 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' >> "$HOME/.zshrc"
     fi
@@ -62,152 +62,152 @@ else
         echo 'export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"' >> "$HOME/.bashrc"
     fi
 
-    echo -e "${GREEN}✅ Solana CLI 安装完成${NC}"
+    echo -e "${GREEN}✅ Solana CLI installation complete${NC}"
 fi
 
 solana --version
 echo ""
 
 # ============================================================================
-# Step 3: 配置 Solana
+# Step 3: Configure Solana
 # ============================================================================
-echo -e "${YELLOW}[3/6] 配置 Solana${NC}"
+echo -e "${YELLOW}[3/6] Configuring Solana${NC}"
 
-# 创建 devnet 钱包（如果不存在）
+# Create devnet wallet (if doesn't exist)
 if [ ! -f "$HOME/.config/solana/id.json" ]; then
-    echo "创建新的 Solana 钱包..."
+    echo "Creating new Solana wallet..."
     solana-keygen new --outfile "$HOME/.config/solana/id.json" --no-bip39-passphrase
-    echo -e "${GREEN}✅ 钱包创建完成${NC}"
-    echo -e "${RED}⚠️  重要: 请备份你的钱包文件: ~/.config/solana/id.json${NC}"
+    echo -e "${GREEN}✅ Wallet creation complete${NC}"
+    echo -e "${RED}⚠️  Important: Please backup your wallet file: ~/.config/solana/id.json${NC}"
 else
-    echo -e "${GREEN}✅ 钱包已存在${NC}"
+    echo -e "${GREEN}✅ Wallet already exists${NC}"
 fi
 
-# 设置 devnet
+# Set devnet
 solana config set --url devnet
-echo "当前配置:"
+echo "Current configuration:"
 solana config get
 echo ""
 
-# 获取 devnet SOL
-echo "获取 devnet SOL (可能需要多次尝试)..."
+# Get devnet SOL
+echo "Getting devnet SOL (may require multiple attempts)..."
 BALANCE=$(solana balance --url devnet 2>/dev/null | awk '{print $1}' || echo "0")
-echo "当前余额: $BALANCE SOL"
+echo "Current balance: $BALANCE SOL"
 
 if (( $(echo "$BALANCE < 2" | bc -l 2>/dev/null || echo "1") )); then
-    echo "正在请求空投..."
+    echo "Requesting airdrop..."
     for i in {1..3}; do
-        echo "尝试 $i/3..."
+        echo "Attempt $i/3..."
         solana airdrop 1 --url devnet 2>/dev/null || true
         sleep 5
     done
     BALANCE=$(solana balance --url devnet 2>/dev/null | awk '{print $1}' || echo "0")
-    echo -e "${GREEN}✅ 最终余额: $BALANCE SOL${NC}"
+    echo -e "${GREEN}✅ Final balance: $BALANCE SOL${NC}"
 
     if (( $(echo "$BALANCE < 1" | bc -l 2>/dev/null || echo "1") )); then
-        echo -e "${YELLOW}⚠️  余额不足，你可以稍后手动获取:${NC}"
+        echo -e "${YELLOW}⚠️  Insufficient balance, you can manually get it later:${NC}"
         echo "   solana airdrop 2 --url devnet"
-        echo "   或访问: https://solfaucet.com"
+        echo "   or visit: https://solfaucet.com"
     fi
 else
-    echo -e "${GREEN}✅ 余额充足${NC}"
+    echo -e "${GREEN}✅ Sufficient balance${NC}"
 fi
 echo ""
 
 # ============================================================================
-# Step 4: 安装 Anchor
+# Step 4: Install Anchor
 # ============================================================================
-echo -e "${YELLOW}[4/6] 检查/安装 Anchor${NC}"
+echo -e "${YELLOW}[4/6] Checking/Installing Anchor${NC}"
 
 if command -v anchor &> /dev/null; then
-    echo -e "${GREEN}✅ Anchor 已安装: $(anchor --version)${NC}"
+    echo -e "${GREEN}✅ Anchor already installed: $(anchor --version)${NC}"
 else
-    echo "正在安装 Anchor (这可能需要 10-15 分钟)..."
+    echo "Installing Anchor (this may take 10-15 minutes)..."
     cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
 
-    # 安装最新版本
+    # Install latest version
     avm install latest
     avm use latest
 
-    echo -e "${GREEN}✅ Anchor 安装完成${NC}"
+    echo -e "${GREEN}✅ Anchor installation complete${NC}"
 fi
 
 anchor --version
 echo ""
 
 # ============================================================================
-# Step 5: 安装 Node 依赖
+# Step 5: Install Node Dependencies
 # ============================================================================
-echo -e "${YELLOW}[5/6] 安装 Node.js 依赖${NC}"
+echo -e "${YELLOW}[5/6] Installing Node.js Dependencies${NC}"
 
 if [ ! -d "node_modules" ]; then
-    echo "正在安装 npm 包..."
+    echo "Installing npm packages..."
     npm install --legacy-peer-deps || npm install
-    echo -e "${GREEN}✅ Node 依赖安装完成${NC}"
+    echo -e "${GREEN}✅ Node dependencies installation complete${NC}"
 else
-    echo -e "${GREEN}✅ Node 依赖已存在${NC}"
+    echo -e "${GREEN}✅ Node dependencies already exist${NC}"
 fi
 echo ""
 
 # ============================================================================
-# Step 6: 构建和测试
+# Step 6: Build and Test
 # ============================================================================
-echo -e "${YELLOW}[6/6] 构建程序${NC}"
+echo -e "${YELLOW}[6/6] Building Program${NC}"
 
-echo "正在构建 Solana 程序 (首次构建需要 5-10 分钟)..."
+echo "Building Solana program (first build takes 5-10 minutes)..."
 anchor build
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ 构建成功！${NC}"
+    echo -e "${GREEN}✅ Build successful!${NC}"
     echo ""
 
-    # 显示程序 ID
-    PROGRAM_ID=$(solana address -k target/deploy/x402_insurance-keypair.json 2>/dev/null || echo "未生成")
-    echo "程序 ID: $PROGRAM_ID"
+    # Display program ID
+    PROGRAM_ID=$(solana address -k target/deploy/x402_insurance-keypair.json 2>/dev/null || echo "Not generated")
+    echo "Program ID: $PROGRAM_ID"
     echo ""
 
-    # 询问是否运行测试
-    read -p "是否运行测试? (y/n) [y]: " run_tests
+    # Ask if want to run tests
+    read -p "Run tests? (y/n) [y]: " run_tests
     run_tests=${run_tests:-y}
 
     if [ "$run_tests" = "y" ] || [ "$run_tests" = "Y" ]; then
         echo ""
-        echo -e "${YELLOW}运行测试...${NC}"
+        echo -e "${YELLOW}Running tests...${NC}"
         anchor test
 
         if [ $? -eq 0 ]; then
             echo ""
             echo -e "${GREEN}========================================${NC}"
-            echo -e "${GREEN}🎉 所有测试通过！${NC}"
+            echo -e "${GREEN}🎉 All tests passed!${NC}"
             echo -e "${GREEN}========================================${NC}"
         else
             echo ""
-            echo -e "${RED}❌ 测试失败${NC}"
-            echo "检查错误信息并重试"
+            echo -e "${RED}❌ Tests failed${NC}"
+            echo "Check error messages and try again"
         fi
     fi
 else
-    echo -e "${RED}❌ 构建失败${NC}"
-    echo "检查错误信息并重试"
+    echo -e "${RED}❌ Build failed${NC}"
+    echo "Check error messages and try again"
     exit 1
 fi
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}✅ 安装完成！${NC}"
+echo -e "${GREEN}✅ Installation Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "下一步:"
-echo "1. 部署到 devnet:"
+echo "Next steps:"
+echo "1. Deploy to devnet:"
 echo "   ./scripts/deploy.sh"
 echo ""
-echo "2. 初始化协议:"
+echo "2. Initialize protocol:"
 echo "   node scripts/initialize.js"
 echo ""
-echo "3. 查看文档:"
+echo "3. View documentation:"
 echo "   cat README.md"
 echo "   cat SETUP_GUIDE.md"
 echo ""
-echo "需要更多 devnet SOL? 运行:"
+echo "Need more devnet SOL? Run:"
 echo "   solana airdrop 2 --url devnet"
 echo ""

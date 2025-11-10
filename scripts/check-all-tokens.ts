@@ -15,7 +15,7 @@ async function checkAllTokens() {
   const providerWallet = new PublicKey("7RRuzQ6ix3L6LghJr1RdWCUKT4mJhUGwhaLecZwKeAim");
   const DEVNET_USDC_MINT = new PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
 
-  console.log("🔍 检查Provider的所有Token账户...\n");
+  console.log("🔍 Checking all Token accounts for Provider...\n");
   console.log("Provider Wallet:", providerWallet.toString());
   console.log("");
 
@@ -26,14 +26,14 @@ async function checkAllTokens() {
       { programId: TOKEN_PROGRAM_ID }
     );
 
-    console.log(`📊 找到 ${tokenAccounts.value.length} 个Token账户:\n`);
+    console.log(`📊 Found ${tokenAccounts.value.length} Token account(s):\n`);
 
     if (tokenAccounts.value.length === 0) {
-      console.log("❌ 没有找到任何Token账户");
+      console.log("❌ No Token accounts found");
       console.log("");
-      console.log("💡 提示：");
-      console.log("   如果您将USDC转到了这个地址，可能需要先创建Token账户");
-      console.log("   或者USDC可能转到了其他地址");
+      console.log("💡 Tips:");
+      console.log("   If you transferred USDC to this address, you may need to create Token account first");
+      console.log("   Or USDC may have been transferred to a different address");
       return;
     }
 
@@ -49,20 +49,20 @@ async function checkAllTokens() {
       console.log("  Decimals:", decimals);
 
       if (mint === DEVNET_USDC_MINT.toString()) {
-        console.log("  ✅ 这是USDC账户！");
+        console.log("  ✅ This is the USDC account!");
       }
       console.log("");
     }
 
     // Also check recent transactions
-    console.log("📜 检查最近的交易记录...\n");
+    console.log("📜 Checking recent transaction history...\n");
     const signatures = await connection.getSignaturesForAddress(
       providerWallet,
       { limit: 10 }
     );
 
     if (signatures.length > 0) {
-      console.log(`找到 ${signatures.length} 笔最近的交易:\n`);
+      console.log(`Found ${signatures.length} recent transaction(s):\n`);
       for (const sig of signatures) {
         console.log("Signature:", sig.signature);
         console.log("  Block Time:", sig.blockTime ? new Date(sig.blockTime * 1000).toISOString() : "Unknown");
@@ -70,11 +70,11 @@ async function checkAllTokens() {
         console.log("");
       }
     } else {
-      console.log("没有找到最近的交易");
+      console.log("No recent transactions found");
     }
 
   } catch (error: any) {
-    console.error("❌ 错误:", error.message);
+    console.error("❌ Error:", error.message);
     throw error;
   }
 }

@@ -14,12 +14,12 @@ async function verifyWallet() {
     "confirmed"
   );
 
-  // 读取新Provider keypair
+  // Read new Provider keypair
   const keysDir = path.join(__dirname, "../.keys");
   const providerPath = path.join(keysDir, "provider.json");
 
   if (!fs.existsSync(providerPath)) {
-    throw new Error("Provider keypair未找到");
+    throw new Error("Provider keypair not found");
   }
 
   const providerSecretKey = Uint8Array.from(
@@ -27,32 +27,32 @@ async function verifyWallet() {
   );
   const provider = Keypair.fromSecretKey(providerSecretKey);
 
-  console.log("🔍 验证新Provider钱包...\n");
-  console.log("Provider地址:", provider.publicKey.toString());
+  console.log("🔍 Verifying new Provider wallet...\n");
+  console.log("Provider address:", provider.publicKey.toString());
   console.log("");
 
-  // 检查SOL余额
+  // Check SOL balance
   const solBalance = await connection.getBalance(provider.publicKey);
-  console.log("💰 SOL余额:", solBalance / LAMPORTS_PER_SOL, "SOL");
+  console.log("💰 SOL balance:", solBalance / LAMPORTS_PER_SOL, "SOL");
 
   if (solBalance === 0) {
-    console.log("  ⚠️  未收到SOL");
+    console.log("  ⚠️  No SOL received");
   } else {
-    console.log("  ✅ 已收到SOL");
+    console.log("  ✅ SOL received");
   }
   console.log("");
 
-  // 检查所有token账户
+  // Check all token accounts
   const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
     provider.publicKey,
     { programId: TOKEN_PROGRAM_ID }
   );
 
-  console.log(`📊 Token账户数量: ${tokenAccounts.value.length}\n`);
+  console.log(`📊 Token account count: ${tokenAccounts.value.length}\n`);
 
   if (tokenAccounts.value.length === 0) {
-    console.log("❌ 未找到任何token账户");
-    console.log("   可能tokens还在转账中，请稍等片刻后重试");
+    console.log("❌ No token accounts found");
+    console.log("   Tokens may still be in transfer, please wait and try again");
     return;
   }
 
@@ -73,26 +73,26 @@ async function verifyWallet() {
   }
 
   console.log("═══════════════════════════════════════════════════════════");
-  console.log("📋 总结:");
-  console.log("  SOL余额:", solBalance / LAMPORTS_PER_SOL, "SOL");
-  console.log("  Token账户:", tokenAccounts.value.length);
-  console.log("  总Tokens:", totalTokens);
+  console.log("📋 Summary:");
+  console.log("  SOL balance:", solBalance / LAMPORTS_PER_SOL, "SOL");
+  console.log("  Token accounts:", tokenAccounts.value.length);
+  console.log("  Total Tokens:", totalTokens);
   console.log("");
 
   if (solBalance >= 0.01 * LAMPORTS_PER_SOL && totalTokens >= 1.02) {
-    console.log("✅ 资金充足，可以开始E2E测试！");
+    console.log("✅ Funds sufficient, can start E2E testing!");
     console.log("");
-    console.log("运行测试:");
+    console.log("Run tests:");
     console.log("  ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \\");
     console.log("  ANCHOR_WALLET=~/.config/solana/id.json \\");
     console.log("  npx ts-mocha -p ./tsconfig.json -t 1000000 tests/complete-e2e-test.ts");
   } else {
-    console.log("⚠️  资金不足:");
+    console.log("⚠️  Insufficient funds:");
     if (solBalance < 0.01 * LAMPORTS_PER_SOL) {
-      console.log("  - 需要更多SOL (至少0.01 SOL用于gas费)");
+      console.log("  - Need more SOL (at least 0.01 SOL for gas fees)");
     }
     if (totalTokens < 1.02) {
-      console.log("  - 需要更多tokens (至少1.02用于保证金)");
+      console.log("  - Need more tokens (at least 1.02 for bond)");
     }
   }
   console.log("═══════════════════════════════════════════════════════════");

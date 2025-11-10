@@ -1,7 +1,7 @@
 /**
  * Fund Test Wallets with SOL Airdrop
  *
- * 为新生成的测试钱包申请SOL空投
+ * Request SOL airdrop for newly generated test wallets
  */
 
 import * as anchor from "@coral-xyz/anchor";
@@ -15,13 +15,13 @@ async function fundWallets() {
     "confirmed"
   );
 
-  // 读取keypairs
+  // Read keypairs
   const keysDir = path.join(__dirname, "../.keys");
   const providerPath = path.join(keysDir, "provider.json");
   const clientPath = path.join(keysDir, "client.json");
 
   if (!fs.existsSync(providerPath) || !fs.existsSync(clientPath)) {
-    throw new Error("请先运行 setup-test-wallets.ts 生成keypairs");
+    throw new Error("Please run setup-test-wallets.ts first to generate keypairs");
   }
 
   const providerSecretKey = Uint8Array.from(
@@ -34,59 +34,59 @@ async function fundWallets() {
   const provider = Keypair.fromSecretKey(providerSecretKey);
   const client = Keypair.fromSecretKey(clientSecretKey);
 
-  console.log("💰 申请SOL空投...\n");
+  console.log("💰 Requesting SOL airdrop...\n");
   console.log("Provider:", provider.publicKey.toString());
   console.log("Client:", client.publicKey.toString());
   console.log("");
 
   try {
-    // Provider空投
-    console.log("正在为Provider申请2 SOL...");
+    // Provider airdrop
+    console.log("Requesting 2 SOL for Provider...");
     const providerAirdrop = await connection.requestAirdrop(
       provider.publicKey,
       2 * LAMPORTS_PER_SOL
     );
     await connection.confirmTransaction(providerAirdrop);
-    console.log("  ✅ Provider获得2 SOL");
+    console.log("  ✅ Provider received 2 SOL");
     console.log("  TX:", providerAirdrop);
     console.log("");
 
-    // 等待一下避免限流
+    // Wait a bit to avoid rate limiting
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // Client空投
-    console.log("正在为Client申请2 SOL...");
+    // Client airdrop
+    console.log("Requesting 2 SOL for Client...");
     const clientAirdrop = await connection.requestAirdrop(
       client.publicKey,
       2 * LAMPORTS_PER_SOL
     );
     await connection.confirmTransaction(clientAirdrop);
-    console.log("  ✅ Client获得2 SOL");
+    console.log("  ✅ Client received 2 SOL");
     console.log("  TX:", clientAirdrop);
     console.log("");
   } catch (error: any) {
-    console.log("⚠️  空投可能失败（devnet限流）");
-    console.log("   错误:", error.message);
+    console.log("⚠️  Airdrop may have failed (devnet rate limit)");
+    console.log("   Error:", error.message);
     console.log("");
   }
 
-  // 检查余额
-  console.log("📊 检查余额...\n");
+  // Check balances
+  console.log("📊 Checking balances...\n");
 
   const providerBalance = await connection.getBalance(provider.publicKey);
   const clientBalance = await connection.getBalance(client.publicKey);
 
-  console.log("Provider SOL余额:", providerBalance / LAMPORTS_PER_SOL, "SOL");
-  console.log("Client SOL余额:", clientBalance / LAMPORTS_PER_SOL, "SOL");
+  console.log("Provider SOL balance:", providerBalance / LAMPORTS_PER_SOL, "SOL");
+  console.log("Client SOL balance:", clientBalance / LAMPORTS_PER_SOL, "SOL");
   console.log("");
 
-  console.log("📋 下一步:");
-  console.log("  1. 从水龙头获取测试tokens到Provider地址");
-  console.log("     Provider地址:", provider.publicKey.toString());
-  console.log("     或者");
-  console.log("  2. 如果您有旧地址的私钥，可以创建转账脚本");
+  console.log("📋 Next steps:");
+  console.log("  1. Get test tokens from faucet to Provider address");
+  console.log("     Provider address:", provider.publicKey.toString());
+  console.log("     Or");
+  console.log("  2. If you have old address private key, create a transfer script");
   console.log("");
-  console.log("🔗 Devnet USDC水龙头:");
+  console.log("🔗 Devnet USDC faucet:");
   console.log("   https://spl-token-faucet.com/?token-name=USDC");
   console.log("");
 }

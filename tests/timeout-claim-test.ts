@@ -1,13 +1,13 @@
 /**
  * Timeout Claim Test: Client claims insurance after Provider timeout
  *
- * 测试场景：
- * 1. Provider存入保证金
- * 2. Client购买保险并402支付
- * 3. Provider未在超时时间内确认服务
- * 4. Client发起索赔
- * 5. Client从vault获得1 token补偿
- * 6. 平台从Provider保证金获得0.02 token罚金
+ * Test Scenario:
+ * 1. Provider deposits bond
+ * 2. Client purchases insurance and pays via 402
+ * 3. Provider does not confirm service within timeout period
+ * 4. Client initiates claim
+ * 5. Client receives 1 token compensation from vault
+ * 6. Platform receives 0.02 token penalty from Provider bond
  */
 
 import * as anchor from "@coral-xyz/anchor";
@@ -55,14 +55,14 @@ describe("Timeout Claim Test", () => {
 
   const BOND_AMOUNT = new anchor.BN(1_020_000); // 1.02 tokens
   const PAYMENT_AMOUNT = new anchor.BN(1_000_000); // 1 token
-  const TIMEOUT_MINUTES = new anchor.BN(0); // 0 minutes = 即时超时(用于测试)
+  const TIMEOUT_MINUTES = new anchor.BN(0); // 0 minutes = immediate timeout (for testing)
 
   let requestCommitment: number[];
 
   before(async () => {
-    console.log("\n🔧 设置超时索赔测试环境...\n");
+    console.log("\n🔧 Setting up timeout claim test environment...\n");
 
-    // 读取keypairs
+    // Read keypairs
     const keysDir = path.join(__dirname, "../.keys");
     const providerPath = path.join(keysDir, "provider.json");
     const clientPath = path.join(keysDir, "client.json");
@@ -77,13 +77,13 @@ describe("Timeout Claim Test", () => {
     providerKeypair = Keypair.fromSecretKey(providerSecretKey);
     clientKeypair = Keypair.fromSecretKey(clientSecretKey);
 
-    console.log("📋 测试账户:");
+    console.log("📋 Test Accounts:");
     console.log("  Platform:", provider.wallet.publicKey.toString());
     console.log("  Provider:", providerKeypair.publicKey.toString());
     console.log("  Client:", clientKeypair.publicKey.toString());
     console.log("");
 
-    // 派生PDAs
+    // Derive PDAs
     [configPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
       program.programId
@@ -99,7 +99,7 @@ describe("Timeout Claim Test", () => {
       program.programId
     );
 
-    // 获取token账户
+    // Get token accounts
     providerTokenAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       providerKeypair,
@@ -119,7 +119,7 @@ describe("Timeout Claim Test", () => {
     // So we just pass the vaultPDA directly (which IS the token account)
     vaultTokenAccount = vaultPDA;
 
-    // Platform token账户
+    // Platform token account
     platformTokenAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       providerKeypair,
@@ -127,16 +127,16 @@ describe("Timeout Claim Test", () => {
       provider.wallet.publicKey
     );
 
-    console.log("✅ 设置完成\n");
+    console.log("✅ Setup complete\n");
   });
 
-  it("1️⃣ Client购买保险并支付 (Provider将超时)", async () => {
-    console.log("💳 Client购买保险并支付...");
+  it("1️⃣ Client purchases insurance and pays (Provider will timeout)", async () => {
+    console.log("💳 Client purchasing insurance and paying...");
 
-    // 首先检查Client是否有SOL用于gas费和账户创建
+    // First check if Client has SOL for gas fees and account creation
     const clientSolBalance = await provider.connection.getBalance(clientKeypair.publicKey);
     if (clientSolBalance < 0.01 * LAMPORTS_PER_SOL) {
-      console.log("  从Provider转0.01 SOL给Client...");
+      console.log("  Transferring 0.01 SOL to Client from Provider...");
       const transferTx = await provider.connection.sendTransaction(
         new anchor.web3.Transaction().add(
           anchor.web3.SystemProgram.transfer({
@@ -150,10 +150,10 @@ describe("Timeout Claim Test", () => {
       await provider.connection.confirmTransaction(transferTx);
     }
 
-    // 确保Client有tokens
+    // Ensure Client has tokens
     const clientBalance = Number(clientTokenAccount.amount);
     if (clientBalance === 0) {
-      console.log("  从Provider转1 token给Client...");
+      console.log("  Transferring 1 token to Client from Provider...");
       const { transfer } = await import("@solana/spl-token");
       await transfer(
         provider.connection,
@@ -165,7 +165,7 @@ describe("Timeout Claim Test", () => {
       );
     }
 
-    // 生成request commitment
+    // Generate request commitment
     requestCommitment = Array.from(crypto.getRandomValues(new Uint8Array(32)));
 
     [claimPDA] = PublicKey.findProgramAddressSync(
@@ -192,40 +192,40 @@ describe("Timeout Claim Test", () => {
       .signers([clientKeypair])
       .rpc();
 
-    console.log("  ✅ 购买成功, TX:", tx);
+    console.log("  ✅ Purchase successful, TX:", tx);
 
     const claim = await program.account.insuranceClaim.fetch(claimPDA);
-    console.log("  支付金额:", claim.paymentAmount.toString());
-    console.log("  锁定金额:", claim.lockedAmount.toString());
-    console.log("  截止时间:", new Date(claim.deadline.toNumber() * 1000).toISOString());
+    console.log("  Payment amount:", claim.paymentAmount.toString());
+    console.log("  Locked amount:", claim.lockedAmount.toString());
+    console.log("  Deadline:", new Date(claim.deadline.toNumber() * 1000).toISOString());
     console.log("");
   });
 
-  it("2️⃣ 等待超时", async () => {
-    console.log("⏰ 等待超时...");
+  it("2️⃣ Wait for timeout", async () => {
+    console.log("⏰ Waiting for timeout...");
 
     const claim = await program.account.insuranceClaim.fetch(claimPDA);
     const deadline = claim.deadline.toNumber();
     const now = Math.floor(Date.now() / 1000);
 
-    console.log("  当前时间:", new Date(now * 1000).toISOString());
-    console.log("  截止时间:", new Date(deadline * 1000).toISOString());
+    console.log("  Current time:", new Date(now * 1000).toISOString());
+    console.log("  Deadline:", new Date(deadline * 1000).toISOString());
 
     if (now < deadline) {
       const waitTime = (deadline - now + 1) * 1000;
-      console.log(`  需要等待 ${waitTime}ms...`);
+      console.log(`  Need to wait ${waitTime}ms...`);
       await new Promise((resolve) => setTimeout(resolve, waitTime));
-      console.log("  ✅ 已超时");
+      console.log("  ✅ Timed out");
     } else {
-      console.log("  ✅ 已经超时");
+      console.log("  ✅ Already timed out");
     }
     console.log("");
   });
 
-  it("3️⃣ Client发起索赔", async () => {
-    console.log("🔔 Client发起保险索赔...");
+  it("3️⃣ Client initiates claim", async () => {
+    console.log("🔔 Client initiating insurance claim...");
 
-    // 记录索赔前的余额
+    // Record balances before claim
     const clientBalanceBefore = await getAccount(
       provider.connection,
       clientTokenAccount.address
@@ -238,10 +238,10 @@ describe("Timeout Claim Test", () => {
       providerBondPDA
     );
 
-    console.log("  索赔前:");
-    console.log("    Client余额:", Number(clientBalanceBefore.amount) / 1_000_000);
-    console.log("    Platform余额:", Number(platformBalanceBefore.amount) / 1_000_000);
-    console.log("    Provider总保证金:", providerBondBefore.totalBond.toString());
+    console.log("  Before claim:");
+    console.log("    Client balance:", Number(clientBalanceBefore.amount) / 1_000_000);
+    console.log("    Platform balance:", Number(platformBalanceBefore.amount) / 1_000_000);
+    console.log("    Provider total bond:", providerBondBefore.totalBond.toString());
     console.log("");
 
     try {
@@ -260,11 +260,11 @@ describe("Timeout Claim Test", () => {
         .signers([clientKeypair])
         .rpc();
 
-      console.log("  ✅ 索赔成功!");
+      console.log("  ✅ Claim successful!");
       console.log("  TX:", tx);
       console.log("");
 
-      // 验证索赔后的余额
+      // Verify balances after claim
       const clientBalanceAfter = await getAccount(
         provider.connection,
         clientTokenAccount.address
@@ -278,52 +278,52 @@ describe("Timeout Claim Test", () => {
       );
       const claim = await program.account.insuranceClaim.fetch(claimPDA);
 
-      console.log("  索赔后:");
-      console.log("    Client余额:", Number(clientBalanceAfter.amount) / 1_000_000);
-      console.log("    Platform余额:", Number(platformBalanceAfter.amount) / 1_000_000);
-      console.log("    Provider总保证金:", providerBondAfter.totalBond.toString());
+      console.log("  After claim:");
+      console.log("    Client balance:", Number(clientBalanceAfter.amount) / 1_000_000);
+      console.log("    Platform balance:", Number(platformBalanceAfter.amount) / 1_000_000);
+      console.log("    Provider total bond:", providerBondAfter.totalBond.toString());
       console.log("");
 
-      console.log("  📊 验证结果:");
+      console.log("  📊 Verification results:");
       const clientGain = Number(clientBalanceAfter.amount) - Number(clientBalanceBefore.amount);
       const platformGain = Number(platformBalanceAfter.amount) - Number(platformBalanceBefore.amount);
       const bondLoss = providerBondBefore.totalBond.toNumber() - providerBondAfter.totalBond.toNumber();
 
-      console.log("    Client获得:", clientGain / 1_000_000, "tokens (应该是1)");
-      console.log("    Platform获得:", platformGain / 1_000_000, "tokens (应该是0.02)");
-      console.log("    Provider扣除:", bondLoss / 1_000_000, "tokens (应该是1.02)");
-      console.log("    索赔状态:", Object.keys(claim.status)[0]);
+      console.log("    Client received:", clientGain / 1_000_000, "tokens (should be 1)");
+      console.log("    Platform received:", platformGain / 1_000_000, "tokens (should be 0.02)");
+      console.log("    Provider deducted:", bondLoss / 1_000_000, "tokens (should be 1.02)");
+      console.log("    Claim status:", Object.keys(claim.status)[0]);
 
-      // 断言
-      assert(clientGain === 1_000_000, "Client应该获得1 token补偿");
-      assert(platformGain === 20_000, "Platform应该获得0.02 token罚金");
-      assert(bondLoss === 1_020_000, "Provider保证金应该扣除1.02 token");
-      assert(claim.status.hasOwnProperty("claimed"), "索赔状态应该是claimed");
+      // Assertions
+      assert(clientGain === 1_000_000, "Client should receive 1 token compensation");
+      assert(platformGain === 20_000, "Platform should receive 0.02 token penalty");
+      assert(bondLoss === 1_020_000, "Provider bond should be deducted 1.02 tokens");
+      assert(claim.status.hasOwnProperty("claimed"), "Claim status should be claimed");
 
       console.log("");
-      console.log("  ✅ 所有验证通过!");
+      console.log("  ✅ All verifications passed!");
 
     } catch (error: any) {
-      console.error("  ❌ 索赔失败:", error);
+      console.error("  ❌ Claim failed:", error);
       throw error;
     }
   });
 
-  it("4️⃣ 测试总结", () => {
+  it("4️⃣ Test summary", () => {
     console.log("");
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("🎉 超时索赔测试完成！");
+    console.log("🎉 Timeout Claim Test Complete!");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("");
-    console.log("✅ 验证的功能:");
-    console.log("  1. ✅ Client购买保险并支付给Provider");
-    console.log("  2. ✅ Provider超时未确认服务");
-    console.log("  3. ✅ Client成功发起索赔");
-    console.log("  4. ✅ Client从vault获得1 token补偿");
-    console.log("  5. ✅ Platform获得0.02 token罚金");
-    console.log("  6. ✅ Provider保证金正确扣除1.02 token");
+    console.log("✅ Verified features:");
+    console.log("  1. ✅ Client purchases insurance and pays Provider");
+    console.log("  2. ✅ Provider times out without confirming service");
+    console.log("  3. ✅ Client successfully initiates claim");
+    console.log("  4. ✅ Client receives 1 token compensation from vault");
+    console.log("  5. ✅ Platform receives 0.02 token penalty");
+    console.log("  6. ✅ Provider bond correctly deducted 1.02 tokens");
     console.log("");
-    console.log("📝 这证明了保险机制可以保护Client免受Provider服务失败的损失!");
+    console.log("📝 This proves the insurance mechanism protects Clients from Provider service failure!");
     console.log("═══════════════════════════════════════════════════════════");
   });
 });

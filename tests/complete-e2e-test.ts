@@ -1,13 +1,13 @@
 /**
  * Complete E2E Test: 402 Payment + Insurance
  *
- * 使用 .keys/ 中的keypairs进行完整测试
+ * Using keypairs in .keys/ for complete testing
  *
- * 测试流程：
- * 1. Provider存入保证金
- * 2. Client通过402支付给Provider
- * 3. 测试成功场景：Provider确认服务
- * 4. 测试失败场景：超时索赔
+ * Test flow:
+ * 1. Provider deposits bond
+ * 2. Client pays Provider via 402
+ * 3. Test success scenario: Provider confirms service
+ * 4. Test failure scenario: Timeout claim
  */
 
 import * as anchor from "@coral-xyz/anchor";
@@ -56,16 +56,16 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
   const PAYMENT_AMOUNT = new anchor.BN(1_000_000); // 1 token
 
   before(async () => {
-    console.log("\n🔧 加载测试keypairs...\n");
+    console.log("\n🔧 Loading test keypairs...\n");
 
-    // 读取keypairs
+    // Read keypairs
     const keysDir = path.join(__dirname, "../.keys");
     const providerPath = path.join(keysDir, "provider.json");
     const clientPath = path.join(keysDir, "client.json");
 
     if (!fs.existsSync(providerPath) || !fs.existsSync(clientPath)) {
       throw new Error(
-        "Keypairs未找到。请先运行: npx ts-node scripts/setup-test-wallets.ts"
+        "Keypairs not found. Please run first: npx ts-node scripts/setup-test-wallets.ts"
       );
     }
 
@@ -79,13 +79,13 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
     providerKeypair = Keypair.fromSecretKey(providerSecretKey);
     clientKeypair = Keypair.fromSecretKey(clientSecretKey);
 
-    console.log("📋 测试账户:");
+    console.log("📋 Test Accounts:");
     console.log("  Platform:", provider.wallet.publicKey.toString());
     console.log("  Provider:", providerKeypair.publicKey.toString());
     console.log("  Client:", clientKeypair.publicKey.toString());
     console.log("");
 
-    // 派生PDAs
+    // Derive PDAs
     [configPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
       program.programId
@@ -108,10 +108,10 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
     console.log("");
   });
 
-  it("1️⃣ 检查初始余额", async () => {
-    console.log("🔍 检查初始余额...");
+  it("1️⃣ Check initial balances", async () => {
+    console.log("🔍 Checking initial balances...");
 
-    // 检查Provider SOL余额
+    // Check Provider SOL balance
     const providerSolBalance = await provider.connection.getBalance(
       providerKeypair.publicKey
     );
@@ -121,13 +121,13 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
       "SOL"
     );
 
-    // 检查Client SOL余额
+    // Check Client SOL balance
     const clientSolBalance = await provider.connection.getBalance(
       clientKeypair.publicKey
     );
     console.log("  Client SOL:", clientSolBalance / LAMPORTS_PER_SOL, "SOL");
 
-    // 检查Provider token余额
+    // Check Provider token balance
     const providerTokenAccounts =
       await provider.connection.getParsedTokenAccountsByOwner(
         providerKeypair.publicKey,
@@ -142,28 +142,28 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
 
       if (balance < 1.02) {
         console.log("");
-        console.log("  ⚠️  Provider tokens不足");
-        console.log("     需要至少 1.02 tokens来存入保证金");
-        console.log("     当前:", balance);
+        console.log("  ⚠️  Provider tokens insufficient");
+        console.log("     Need at least 1.02 tokens to deposit bond");
+        console.log("     Current:", balance);
         console.log("");
-        console.log("  请运行转账脚本:");
+        console.log("  Please run transfer script:");
         console.log(
-          "    export OLD_WALLET_KEYPAIR='[...]'  # 旧钱包私钥"
+          "    export OLD_WALLET_KEYPAIR='[...]'  # Old wallet private key"
         );
         console.log("    npx ts-node scripts/transfer-from-old-wallet.ts");
-        throw new Error("Provider tokens不足");
+        throw new Error("Provider tokens insufficient");
       }
     } else {
       console.log("  Provider Tokens: 0");
-      throw new Error("Provider没有tokens");
+      throw new Error("Provider has no tokens");
     }
     console.log("");
   });
 
-  it("2️⃣ Provider存入保证金", async () => {
-    console.log("💰 Provider存入保证金到vault...");
+  it("2️⃣ Provider deposits bond", async () => {
+    console.log("💰 Provider depositing bond to vault...");
 
-    // 获取或创建token账户
+    // Get or create token account
     providerTokenAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       providerKeypair,
@@ -173,7 +173,7 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
 
     console.log("  Provider Token Account:", providerTokenAccount.address.toString());
 
-    // 获取或创建vault token账户
+    // Get or create vault token account
     const vaultTokenAccountInfo = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       providerKeypair, // payer
@@ -192,7 +192,7 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
           providerBond: providerBondPDA,
           provider: providerKeypair.publicKey,
           providerTokenAccount: providerTokenAccount.address,
-          mint: TOKEN_MINT, // 添加mint账户
+          mint: TOKEN_MINT, // Add mint account
           vault: vaultPDA,
           vaultTokenAccount: vaultTokenAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -201,19 +201,19 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
         .signers([providerKeypair])
         .rpc();
 
-      console.log("  ✅ 保证金存入成功");
+      console.log("  ✅ Bond deposit successful");
       console.log("  TX:", tx);
 
-      // 验证bond账户
+      // Verify bond account
       const bond = await program.account.providerBond.fetch(providerBondPDA);
-      console.log("  总保证金:", bond.totalBond.toString());
-      console.log("  锁定保证金:", bond.lockedBond.toString());
+      console.log("  Total bond:", bond.totalBond.toString());
+      console.log("  Locked bond:", bond.lockedBond.toString());
     } catch (error: any) {
       if (error.message.includes("already in use")) {
-        console.log("  ℹ️  保证金账户已存在");
+        console.log("  ℹ️  Bond account already exists");
         const bond = await program.account.providerBond.fetch(providerBondPDA);
-        console.log("  总保证金:", bond.totalBond.toString());
-        console.log("  可用保证金:", bond.availableBond.toString());
+        console.log("  Total bond:", bond.totalBond.toString());
+        console.log("  Available bond:", bond.availableBond.toString());
       } else {
         throw error;
       }
@@ -221,15 +221,15 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
     console.log("");
   });
 
-  it("3️⃣ Client购买保险并402支付", async () => {
-    console.log("💳 Client购买保险并通过402支付给Provider...");
+  it("3️⃣ Client purchases insurance and pays via 402", async () => {
+    console.log("💳 Client purchasing insurance and paying Provider via 402...");
 
-    // 首先检查Client是否有SOL用于gas费
+    // First check if Client has SOL for gas fees
     const clientSolBalance = await provider.connection.getBalance(clientKeypair.publicKey);
     if (clientSolBalance === 0) {
-      console.log("  ⚠️  Client没有SOL，从Provider转一些SOL给Client用于gas费...");
+      console.log("  ⚠️  Client has no SOL, transferring some SOL from Provider for gas fees...");
 
-      // 从Provider转0.01 SOL给Client
+      // Transfer 0.01 SOL from Provider to Client
       const transferTx = await provider.connection.sendTransaction(
         new anchor.web3.Transaction().add(
           anchor.web3.SystemProgram.transfer({
@@ -241,11 +241,11 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
         [providerKeypair]
       );
       await provider.connection.confirmTransaction(transferTx);
-      console.log("  ✅ 已转0.01 SOL给Client");
+      console.log("  ✅ Transferred 0.01 SOL to Client");
     }
 
-    // 获取或创建client token账户
-    // 使用Provider支付创建账户的费用
+    // Get or create client token account
+    // Use Provider to pay for account creation fee
     clientTokenAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       providerKeypair, // payer
@@ -255,11 +255,11 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
 
     console.log("  Client Token Account:", clientTokenAccount.address.toString());
 
-    // Client需要有一些tokens用于402支付
-    // 从Provider转1 token给Client用于测试
+    // Client needs some tokens for 402 payment
+    // Transfer 1 token from Provider to Client for testing
     const clientTokenBalance = Number(clientTokenAccount.amount);
     if (clientTokenBalance === 0) {
-      console.log("  ⚠️  Client没有tokens，从Provider转1 token给Client...");
+      console.log("  ⚠️  Client has no tokens, transferring 1 token from Provider to Client...");
 
       const { transfer } = await import("@solana/spl-token");
       await transfer(
@@ -270,12 +270,12 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
         providerKeypair.publicKey,
         PAYMENT_AMOUNT.toNumber()
       );
-      console.log("  ✅ 已转1 token给Client");
+      console.log("  ✅ Transferred 1 token to Client");
     }
 
     console.log("  Client Token Account:", clientTokenAccount.address.toString());
 
-    // 生成request commitment (32 bytes hash)
+    // Generate request commitment (32 bytes hash)
     const requestCommitment = Array.from(crypto.getRandomValues(new Uint8Array(32)));
     const timeoutMinutes = new anchor.BN(5); // 5 minutes timeout
 
@@ -313,39 +313,39 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
         .signers([clientKeypair])
         .rpc();
 
-      console.log("  ✅ 402支付成功！");
+      console.log("  ✅ 402 payment successful!");
       console.log("  TX:", tx);
       console.log("");
-      console.log("  📊 发生了什么：");
-      console.log("    1. Client支付 1 token 给 Provider (402支付)");
-      console.log("    2. Vault锁定了Provider的 1.02 token保证金");
-      console.log("    3. 创建了保险索赔记录");
+      console.log("  📊 What happened:");
+      console.log("    1. Client paid 1 token to Provider (402 payment)");
+      console.log("    2. Vault locked Provider's 1.02 token bond");
+      console.log("    3. Created insurance claim record");
 
-      // 验证claim
+      // Verify claim
       const claim = await program.account.insuranceClaim.fetch(claimPDA);
       console.log("");
-      console.log("  索赔记录:");
+      console.log("  Claim record:");
       console.log("    Client:", claim.client.toString());
       console.log("    Provider:", claim.provider.toString());
-      console.log("    支付金额:", claim.paymentAmount.toString());
-      console.log("    服务描述:", claim.serviceDescription);
-      console.log("    状态:", Object.keys(claim.status)[0]);
+      console.log("    Payment amount:", claim.paymentAmount.toString());
+      console.log("    Service description:", claim.serviceDescription);
+      console.log("    Status:", Object.keys(claim.status)[0]);
 
     } catch (error: any) {
-      console.error("  ❌ 购买保险失败:", error);
+      console.error("  ❌ Insurance purchase failed:", error);
       throw error;
     }
     console.log("");
   });
 
-  it("4️⃣ Provider确认服务交付", async () => {
-    console.log("✅ Provider确认服务交付...");
+  it("4️⃣ Provider confirms service delivery", async () => {
+    console.log("✅ Provider confirming service delivery...");
 
-    // 生成一个假的Ed25519签名用于测试 (64 bytes)
+    // Generate a fake Ed25519 signature for testing (64 bytes)
     const signature = Array.from(crypto.getRandomValues(new Uint8Array(64)));
 
-    // 需要使用相同的requestCommitment
-    // 从claim账户读取
+    // Need to use the same requestCommitment
+    // Read from claim account
     const claim = await program.account.insuranceClaim.fetch(claimPDA);
     const requestCommitment = Array.from(claim.requestCommitment);
 
@@ -361,42 +361,42 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
         .signers([providerKeypair])
         .rpc();
 
-      console.log("  ✅ 服务确认成功");
+      console.log("  ✅ Service confirmation successful");
       console.log("  TX:", tx);
       console.log("");
-      console.log("  📊 发生了什么：");
-      console.log("    1. Provider确认服务已交付");
-      console.log("    2. Vault解锁了Provider的 1.02 token");
-      console.log("    3. 交易完成，皆大欢喜！");
+      console.log("  📊 What happened:");
+      console.log("    1. Provider confirmed service delivered");
+      console.log("    2. Vault unlocked Provider's 1.02 tokens");
+      console.log("    3. Transaction complete, everyone happy!");
 
-      // 验证claim状态
+      // Verify claim status
       const updatedClaim = await program.account.insuranceClaim.fetch(claimPDA);
       console.log("");
-      console.log("  索赔状态:", Object.keys(updatedClaim.status)[0]);
-      assert(updatedClaim.status.hasOwnProperty("confirmed"), "状态应该是confirmed");
-      console.log("  ✅ 测试通过！");
+      console.log("  Claim status:", Object.keys(updatedClaim.status)[0]);
+      assert(updatedClaim.status.hasOwnProperty("confirmed"), "Status should be confirmed");
+      console.log("  ✅ Test passed!");
 
     } catch (error: any) {
-      console.error("  ❌ 确认服务失败:", error);
+      console.error("  ❌ Service confirmation failed:", error);
       throw error;
     }
     console.log("");
   });
 
-  it("5️⃣ 测试总结", () => {
+  it("5️⃣ Test summary", () => {
     console.log("");
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("🎉 Devnet E2E测试完成！");
+    console.log("🎉 Devnet E2E Test Complete!");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("");
-    console.log("✅ 已测试:");
-    console.log("  1. ✅ Provider存入保证金到vault");
-    console.log("  2. ✅ Client通过402支付给Provider");
-    console.log("  3. ✅ Vault锁定Provider保证金");
-    console.log("  4. ✅ Provider确认服务");
-    console.log("  5. ✅ Vault解锁Provider保证金");
+    console.log("✅ Tested:");
+    console.log("  1. ✅ Provider deposits bond to vault");
+    console.log("  2. ✅ Client pays Provider via 402");
+    console.log("  3. ✅ Vault locks Provider bond");
+    console.log("  4. ✅ Provider confirms service");
+    console.log("  5. ✅ Vault unlocks Provider bond");
     console.log("");
-    console.log("🔗 浏览器链接:");
+    console.log("🔗 Explorer links:");
     console.log(
       `  Program: https://explorer.solana.com/address/${program.programId}?cluster=devnet`
     );
@@ -407,10 +407,10 @@ describe("Complete E2E: 402 Payment + Insurance", () => {
       `  Client: https://explorer.solana.com/address/${clientKeypair.publicKey}?cluster=devnet`
     );
     console.log("");
-    console.log("📝 下一步测试:");
-    console.log("  - 测试超时索赔场景");
-    console.log("  - 测试Provider清算场景");
-    console.log("  - 集成Facilitator服务测试");
+    console.log("📝 Next tests:");
+    console.log("  - Test timeout claim scenario");
+    console.log("  - Test Provider liquidation scenario");
+    console.log("  - Integrate Facilitator service testing");
     console.log("");
     console.log("═══════════════════════════════════════════════════════════");
   });

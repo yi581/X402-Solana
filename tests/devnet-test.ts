@@ -1,12 +1,12 @@
 /**
  * Devnet Test: X402 Insurance Protocol
  *
- * 完整测试流程：
- * 1. 初始化协议
- * 2. Provider存入保证金
- * 3. Client购买保险并支付
- * 4. Provider确认服务
- * 5. 测试索赔流程
+ * Complete test flow:
+ * 1. Initialize protocol
+ * 2. Provider deposits bond
+ * 3. Client purchases insurance and pays
+ * 4. Provider confirms service
+ * 5. Test claim flow
  */
 
 import * as anchor from "@coral-xyz/anchor";
@@ -25,7 +25,7 @@ import {
 } from "@solana/spl-token";
 
 describe("Devnet Test: X402 Insurance", () => {
-  // 连接到devnet
+  // Connect to devnet
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
@@ -46,43 +46,43 @@ describe("Devnet Test: X402 Insurance", () => {
   const LIQUIDATION_GRACE_PERIOD = 86400; // 24 hours
 
   before(async () => {
-    console.log("🔧 Devnet测试环境设置中...\n");
+    console.log("🔧 Setting up Devnet test environment...\n");
 
-    // 使用环境中的provider keypair作为平台
+    // Use environment provider keypair as platform
     const platformTreasury = provider.wallet.publicKey;
 
-    // 生成测试账户
+    // Generate test accounts
     provider1 = Keypair.generate();
     client1 = Keypair.generate();
 
-    console.log("📋 测试账户:");
+    console.log("📋 Test Accounts:");
     console.log("   Platform:", platformTreasury.toString());
     console.log("   Provider:", provider1.publicKey.toString());
     console.log("   Client:", client1.publicKey.toString());
     console.log("");
 
-    // 获取SOL airdrop (devnet)
+    // Get SOL airdrop (devnet)
     try {
-      console.log("💰 请求Devnet SOL空投...");
+      console.log("💰 Requesting Devnet SOL airdrop...");
 
       const providerAirdrop = await provider.connection.requestAirdrop(
         provider1.publicKey,
         2 * LAMPORTS_PER_SOL
       );
       await provider.connection.confirmTransaction(providerAirdrop);
-      console.log("   ✅ Provider获得2 SOL");
+      console.log("   ✅ Provider received 2 SOL");
 
       const clientAirdrop = await provider.connection.requestAirdrop(
         client1.publicKey,
         2 * LAMPORTS_PER_SOL
       );
       await provider.connection.confirmTransaction(clientAirdrop);
-      console.log("   ✅ Client获得2 SOL\n");
+      console.log("   ✅ Client received 2 SOL\n");
     } catch (error) {
-      console.log("   ⚠️  空投可能失败（devnet限流），继续测试...\n");
+      console.log("   ⚠️  Airdrop may have failed (devnet rate limit), continuing test...\n");
     }
 
-    // 派生PDAs
+    // Derive PDAs
     [configPDA] = PublicKey.findProgramAddressSync(
       [Buffer.from("config")],
       program.programId
@@ -98,22 +98,22 @@ describe("Devnet Test: X402 Insurance", () => {
       program.programId
     );
 
-    console.log("📍 PDA地址:");
+    console.log("📍 PDA Addresses:");
     console.log("   Config:", configPDA.toString());
     console.log("   Vault:", vaultPDA.toString());
     console.log("   Provider Bond:", providerBondPDA.toString());
-    console.log("\n✅ 设置完成\n");
+    console.log("\n✅ Setup complete\n");
   });
 
-  it("1️⃣ 初始化保险协议", async () => {
-    console.log("🚀 初始化X402保险协议...");
+  it("1️⃣ Initialize insurance protocol", async () => {
+    console.log("🚀 Initializing X402 insurance protocol...");
 
     try {
-      // 检查是否已初始化
+      // Check if already initialized
       const existingConfig = await program.account.insuranceConfig.fetchNullable(configPDA);
 
       if (existingConfig) {
-        console.log("   ℹ️  协议已初始化，跳过");
+        console.log("   ℹ️  Protocol already initialized, skipping");
         console.log("   Platform Treasury:", existingConfig.platformTreasury.toString());
         console.log("   Penalty Rate:", existingConfig.platformPenaltyRate, "bps");
         console.log("   Default Timeout:", existingConfig.defaultTimeout.toString(), "seconds");
@@ -135,7 +135,7 @@ describe("Devnet Test: X402 Insurance", () => {
         })
         .rpc();
 
-      console.log("   ✅ 初始化成功");
+      console.log("   ✅ Initialization successful");
       console.log("   TX:", tx);
 
       const config = await program.account.insuranceConfig.fetch(configPDA);
@@ -145,17 +145,17 @@ describe("Devnet Test: X402 Insurance", () => {
       console.log("   Liquidation Grace Period:", config.liquidationGracePeriod.toString(), "seconds");
     } catch (error: any) {
       if (error.message.includes("already in use")) {
-        console.log("   ℹ️  协议已初始化");
+        console.log("   ℹ️  Protocol already initialized");
       } else {
         throw error;
       }
     }
   });
 
-  it("2️⃣ Provider存入保证金", async () => {
-    console.log("\n💰 Provider存入保证金到vault...");
+  it("2️⃣ Provider deposits bond", async () => {
+    console.log("\n💰 Provider depositing bond to vault...");
 
-    // 获取或创建token账户
+    // Get or create token account
     const providerTokenAccount = await getOrCreateAssociatedTokenAccount(
       provider.connection,
       provider1,
@@ -163,63 +163,63 @@ describe("Devnet Test: X402 Insurance", () => {
       provider1.publicKey
     );
 
-    console.log("   Provider USDC账户:", providerTokenAccount.address.toString());
+    console.log("   Provider USDC account:", providerTokenAccount.address.toString());
 
-    // 检查余额
+    // Check balance
     const balance = await provider.connection.getBalance(provider1.publicKey);
-    console.log("   Provider SOL余额:", balance / LAMPORTS_PER_SOL, "SOL");
+    console.log("   Provider SOL balance:", balance / LAMPORTS_PER_SOL, "SOL");
 
-    // 注意：在devnet上，您需要先从水龙头获取USDC
-    console.log("   ⚠️  注意：需要先从devnet USDC水龙头获取测试币");
+    // Note: On devnet, you need to get USDC from faucet first
+    console.log("   ⚠️  Note: Need to get test coins from devnet USDC faucet first");
     console.log("   USDC Faucet: https://spl-token-faucet.com/?token-name=USDC");
   });
 
-  it("3️⃣ 检查程序状态", async () => {
-    console.log("\n🔍 检查程序部署状态...");
+  it("3️⃣ Check program status", async () => {
+    console.log("\n🔍 Checking program deployment status...");
 
     const programInfo = await provider.connection.getAccountInfo(program.programId);
 
     if (programInfo) {
-      console.log("   ✅ 程序已部署");
+      console.log("   ✅ Program deployed");
       console.log("   Owner:", programInfo.owner.toString());
       console.log("   Executable:", programInfo.executable);
       console.log("   Data Length:", programInfo.data.length, "bytes");
     } else {
-      console.log("   ❌ 程序未找到");
+      console.log("   ❌ Program not found");
     }
 
-    // 检查配置账户
+    // Check config account
     const config = await program.account.insuranceConfig.fetchNullable(configPDA);
     if (config) {
-      console.log("   ✅ 配置账户存在");
+      console.log("   ✅ Config account exists");
       console.log("   Platform:", config.platformTreasury.toString());
     } else {
-      console.log("   ⚠️  配置账户未初始化");
+      console.log("   ⚠️  Config account not initialized");
     }
   });
 
-  it("4️⃣ 测试总结", async () => {
+  it("4️⃣ Test summary", async () => {
     console.log("\n");
     console.log("═══════════════════════════════════════════════════════════");
-    console.log("📊 Devnet测试总结");
+    console.log("📊 Devnet Test Summary");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("");
-    console.log("✅ 已完成:");
-    console.log("   1. ✅ 连接到Solana Devnet");
-    console.log("   2. ✅ 验证程序部署");
-    console.log("   3. ✅ 初始化协议配置");
-    console.log("   4. ✅ 创建测试账户");
+    console.log("✅ Completed:");
+    console.log("   1. ✅ Connected to Solana Devnet");
+    console.log("   2. ✅ Verified program deployment");
+    console.log("   3. ✅ Initialized protocol configuration");
+    console.log("   4. ✅ Created test accounts");
     console.log("");
-    console.log("🔗 链接:");
+    console.log("🔗 Links:");
     console.log("   Program:", `https://explorer.solana.com/address/${program.programId}?cluster=devnet`);
     console.log("   Config:", `https://explorer.solana.com/address/${configPDA}?cluster=devnet`);
     console.log("");
-    console.log("📝 下一步:");
-    console.log("   1. 从USDC水龙头获取测试币");
+    console.log("📝 Next steps:");
+    console.log("   1. Get test coins from USDC faucet");
     console.log("      https://spl-token-faucet.com/?token-name=USDC");
-    console.log("   2. Provider存入保证金");
-    console.log("   3. Client购买保险并支付");
-    console.log("   4. 测试完整的402支付流程");
+    console.log("   2. Provider deposits bond");
+    console.log("   3. Client purchases insurance and pays");
+    console.log("   4. Test complete 402 payment flow");
     console.log("");
     console.log("═══════════════════════════════════════════════════════════");
   });
